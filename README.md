@@ -379,7 +379,7 @@ UPDATE time_diff_schedules
 SET time_in_status = (
 CASE
 	WHEN time_in_diff_minutes < -10 THEN 'Late'
-	WHEN time_in_diff_minutes > -10 THEN 'On Time'
+	WHEN time_in_diff_minutes >= -10 THEN 'On Time'
 	ELSE time_in_status
 END
 );
@@ -488,3 +488,278 @@ DAX Formula:
 TotalNumberOfLates = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"))
 TotalNumberOfEarlyOut = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "work" && SchedulesClean[time_out_status] = "Early Out"))
 ```
+**2.F. Getting Late, Early Out and Leave Monthly Trend.**
+
+![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.f..png)
+
+Using a Line Chart, we used the dates column from SchedulesClean as the X-axis then used TotalNumberOfEarlyOut, TotalNumberOfLates, and TotalSickAndAnnualLeave calculated measurements as the Y-axis.
+
+DAX Formula:
+
+```sh
+TotalNumberOfLates = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"))
+TotalNumberOfEarlyOut = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "work" && SchedulesClean[time_out_status] = "Early Out"))
+TotalSickAndAnnualLeave = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[leave_type] = "sick" || SchedulesClean[leave_type] = "annual"))
+```
+
+**2.G. Getting the Average Late In Minutes.**
+
+![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.g..png)
+
+Using a Card visual, we used the AverageLateInMinutes calculated measurement to get the average late in minutes.
+
+DAX Formula:
+
+```sh
+AverageLateInMinutes = AVERAGEX(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"), ABS(SchedulesClean[time_in_diff_minutes]))
+```
+**2.H. Getting the Average Early Out In Minutes.**
+
+![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.h..png)
+
+Using a Card visual, we used the AverageEarlyOutInMinutes calculated measurement to get the average early out in minutes.
+
+DAX Formula:
+
+```sh
+AverageEarlyOutInMinutes = AVERAGEX(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_out_status] = "Early Out"), ABS(SchedulesClean[time_out_diff_minutes]))
+```
+
+**2.I. Getting the Number of Sick and Annual Leave.**
+
+![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.i..png)
+
+Using a Card visual, we used the TotalSickAndAnnualLeave calculated measurement to get the total number of sick and annual leave.
+
+DAX Formula:
+
+```sh
+TotalSickAndAnnualLeave = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[leave_type] = "sick" || SchedulesClean[leave_type] = "annual"))
+```
+
+**2.J. Getting the Most Undisciplined Department.**
+
+![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.j..png)
+
+Using a Clustered Column Chart, we use department column from SchedulesClean table as the X-axis and used UndisciplinedEmployee calculated measurement as the Y-axis.
+
+DAX Formula:
+
+```sh
+UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
+```
+
+**2.K. Getting the Most Disciplined Employee.**
+
+![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.k..png)
+
+Using a Stacked Bar Chart, we used user_id from SchedulesClean table as the Y-axis and used UndisciplinedEmployee calculated measures as the X-axis and sorted the X-axis in ascending order.
+
+DAX Formula:
+
+```sh
+UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
+```
+
+**2.L. Getting the Most Undisciplined Employee.**
+
+![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.l..png)
+
+DAX Formula:
+
+```sh
+UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
+```
+
+&nbsp; **3.	Answering questions using SQL and Power BI.**
+
+**3.A. Identify the most disciplined and undisciplined employees and divisions**
+
+**a. Most disciplined employees.**
+ 
+SQL Syntax:
+
+```sh
+SELECT
+	user_id,
+	position,
+	Number_of_Lates,
+	Number_of_Early_Outs,
+	Number_of_Sick_and_Vacation_Leave,
+	Number_of_Lates + Number_of_Early_outs + Number_of_Sick_and_Vacation_Leave AS Disciplined
+FROM (
+	SELECT
+		user_id,
+		position,
+		COUNT(CASE WHEN time_in_status = 'Late' THEN 1 ELSE NULL END) AS Number_of_Lates,
+		COUNT(CASE WHEN time_out_status = 'Early Out' THEN 1 ELSE NULL END) AS Number_of_Early_Outs,
+		COUNT(CASE WHEN leave_type IN ('sick', 'annual') THEN 1 ELSE NULL END) AS Number_of_Sick_and_Vacation_Leave
+	FROM time_diff_schedules
+	GROUP BY user_id, position
+) AS Subquery
+ORDER BY Disciplined ASC;
+```
+
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/7d60a323-c40e-4142-a627-b148c67ecef7)
+
+**b. Most disciplined division.**
+
+SQL Syntax:
+
+```sh
+SELECT
+	department,
+	Number_of_Lates,
+	Number_of_Early_Outs,
+	Number_of_Sick_and_Vacation_Leave,
+	Number_of_Lates + Number_of_Early_outs + Number_of_Sick_and_Vacation_Leave AS Disciplined
+FROM (
+	SELECT
+		department,
+		COUNT(CASE WHEN time_in_status = 'Late' THEN 1 ELSE NULL END) AS Number_of_Lates,
+		COUNT(CASE WHEN time_out_status = 'Early Out' THEN 1 ELSE NULL END) AS Number_of_Early_Outs,
+		COUNT(CASE WHEN leave_type IN ('sick', 'annual') THEN 1 ELSE NULL END) AS Number_of_Sick_and_Vacation_Leave
+	FROM time_diff_schedules
+	GROUP BY department
+) AS Subquery
+ORDER BY Disciplined ASC
+LIMIT 1;
+```
+
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/2eb8f95d-6a72-45f2-af25-57d80ec741ca)
+
+**c. Most undisciplined employees.**
+
+SQL Syntax:
+
+```sh
+SELECT
+	user_id,
+	position,
+	Number_of_Lates,
+	Number_of_Early_Outs,
+	Number_of_Sick_and_Vacation_Leave,
+	Number_of_Lates + Number_of_Early_outs + Number_of_Sick_and_Vacation_Leave AS Disciplined
+FROM (
+	SELECT
+		user_id,
+		position,
+		COUNT(CASE WHEN time_in_status = 'Late' THEN 1 ELSE NULL END) AS Number_of_Lates,
+		COUNT(CASE WHEN time_out_status = 'Early Out' THEN 1 ELSE NULL END) AS Number_of_Early_Outs,
+		COUNT(CASE WHEN leave_type IN ('sick', 'annual') THEN 1 ELSE NULL END) AS Number_of_Sick_and_Vacation_Leave
+	FROM time_diff_schedules
+	GROUP BY user_id, position
+) AS Subquery
+ORDER BY Disciplined DESC;
+```
+
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/2d12cbab-697d-4818-87e0-9c845a390a25)
+
+**d. Most undisciplined division.**
+
+SQL Syntax:
+
+```sh
+SELECT
+	department,
+	Number_of_Lates,
+	Number_of_Early_Outs,
+	Number_of_Sick_and_Vacation_Leave,
+	Number_of_Lates + Number_of_Early_outs + Number_of_Sick_and_Vacation_Leave AS Disciplined
+FROM (
+	SELECT
+		department,
+		COUNT(CASE WHEN time_in_status = 'Late' THEN 1 ELSE NULL END) AS Number_of_Lates,
+		COUNT(CASE WHEN time_out_status = 'Early Out' THEN 1 ELSE NULL END) AS Number_of_Early_Outs,
+		COUNT(CASE WHEN leave_type IN ('sick', 'annual') THEN 1 ELSE NULL END) AS Number_of_Sick_and_Vacation_Leave
+	FROM time_diff_schedules
+	GROUP BY department
+) AS Subquery
+ORDER BY Disciplined DESC
+LIMIT 1;
+```
+
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/c4470b8f-a5b3-4334-bdf8-affc543c0c18)
+
+**3.B. Create a visualization with the analysis of weekdays and months when the most employees were late/absent (either for vacation or sick leave).**
+
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/caffa9ec-c8aa-4f7e-8e88-529f59db442e)
+
+This visualization was made with Power BI. It highlights that the most instances of employees being late happened on **Thursdays**, totaling **62** occurrences. Additionally, the highest number of sick and vacation leaves occurred in **June 2022**, totaling **12** instances.
+
+**3.C. Answering the following questions.**
+&nbsp; **a. Which heads of departments tend to forgive employees for lack of discipline?**
+
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/1e187176-2eb7-4a92-8ebd-de690fca3cd8)
+
+The visualization illustrates that the **Pharmacy Department** has the highest count of occurrences for being late, leaving work early, taking sick leave, and being granted time off, totaling **223** actions.
+
+&nbsp; **b. Are there any favorites for any heads of departments (perhaps some employees are always forgiven for being late, given time off, etc.)**
+
+SQL Syntax:
+
+```sh
+SELECT
+	user_id,
+	position,
+	Number_of_Lates,
+	Number_of_Early_Outs,
+	Number_of_Sick_and_Vacation_Leave,
+	Number_of_Lates + Number_of_Early_outs + Number_of_Sick_and_Vacation_Leave AS Undisciplined
+FROM (
+	SELECT
+		user_id,
+		position,
+		COUNT(CASE WHEN time_in_status = 'Late' THEN 1 ELSE NULL END) AS Number_of_Lates,
+		COUNT(CASE WHEN time_out_status = 'Early Out' THEN 1 ELSE NULL END) AS Number_of_Early_Outs,
+		COUNT(CASE WHEN leave_type IN ('sick', 'annual') THEN 1 ELSE NULL END) AS Number_of_Sick_and_Vacation_Leave
+	FROM time_diff_schedules
+	GROUP BY user_id, position
+) AS Subquery
+ORDER BY Undisciplined DESC;
+```
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/72d29494-b29d-425a-b63f-86031166bf7c)
+
+The SQL query provides information about employees who were often late, left work early, or took time off.  Employee with **ID 74054** from the **Pharmacy Department** was the most undisciplined employee with **33 lates**, **21 early outs**, and **1 absences**. Employee with **ID 74639** from the **Pharmacy Department** was late the most, totaling **43** times. Employee with **ID 74454** from the **Pharmacy Department** left work early the most, totaling **26** times. From the **Medical Department**, employee with **ID 74049** took the most sick and vacation leave, a total of **18** times.
+
+**Insights**
+1.	Upon cleaning the data set with matching attendance and schedules we found out that there are total of **5066** working days.
+2.	Using a calculated measurement, we found out that employee attendance rate is **97.75%**
+3.	Using a calculated measurement, we found out that employee late rate is **6.22%**
+4.	Using a calculated measurement, we found out that employee early out rate is **3.14%**
+5.	Number of employees who checked in late and checked out early are almost spread evenly throughout the week wherein: **Thursday** with the most late with **62** late and **18** early outs, followed by **Tuesday** with the most number of early outs with **28** early outs and **52** late, and **Monday** with **50** lates and **25** early outs.
+6.	The month with most disciplined employees is **November 2022** with **7** lates, **6** early outs, **8** absences.
+7.	The month with the most absences is **June 2022** with a total of **12** absences.
+8.	The month with the most lates are **February** and **March of 2022** with a total of **33** lates in both months.
+9.	The month with the most employees who checked out early is **December 2021** with a total early outs of **25**.
+10.	Average late in minutes is **40 minutes**.
+11.	Average early out in minutes is **34.81 minutes**.
+12.	The total absences occurred throughout the period is **54**.
+13.	The department who has the most undisciplined employees is **Pharmacy** with a total of **223** occurrences.
+14.	The department who has the most disciplined employees is **“No Data”** with a total of **9** occurrences.
+15.	The most undisciplined employee is **user_id 74054** with a total of **54** occurrences.
+16.	The most disciplined employee are user ids; **93607**, **84932**, **84490**, **83894**, **83893**, **75848**, and **120696** with a total of **1** occurrence.
+
+**Recommendations**
+**1.	Review Department Performance**
+Give special attention to the Pharmacy department, where there have been more cases of lateness and early checked outs. Work together with their superiors to identify any challenges they’re facing and come up with strategies to improve attendance.
+**2.	Workday Reminder**
+Since Mondays, Tuesday, and Thursdays have shown a pattern of lateness, review the rules about arriving on time. Integrate a gentle reminder to the system to help everyone remember to arrive on time.
+**3.	Monthly Meetings**
+Concentrate on months that have had discipline issues, like February, March, June, and November. Organize a short meeting with the employees at the start of these months to discuss the importance of being punctual and for not skipping work, offering tips and assistance.
+**4.	Individual Counseling**
+Connect with the employee who had the most lateness and early outs. Understand their situation and offer any help they may need. Use their story to encourage others. Similarly, organize a meeting with the most disciplined employees and learn from their positive habits.
+**5.	Departments and Forgiveness**
+Investigate department heads who are lenient regarding discipline. Make sure that they are familiar and understood how important the company policies are. Give them training or advice if required, and to ensure that rules are applied consistently in all teams.
+**6.	Time Management Awareness**
+Use the average time for lateness and early departures as a teaching moment. During the initial training, include techniques for better time management. This could help plan their day better and be on time.
+**7.	Policy Improvement**
+Look into the absence policy, considering whether it fits in various situations and if it is fair. Make changes if necessary to ensure a consistent and reasonable approach to manage absences.
+**8.	Punctuality Importance**
+Keep everyone informed about attendance rules with regular reminders. Use monthly newsletters or announcements to stress the importance of punctuality and following the rules.
+**9.	Giving Incentives**
+Consider introducing small rewards for departments and employees who are consistently meet punctuality goals. Recognize the most improved teams or individuals as an example for others to follow.
+**10.	Celebrate Success**
+Celebrating the accomplishments of punctual departments or individuals will create a positive atmosphere around punctuality. This can be shout-outs in the company communications or small appreciation events.
+
+
