@@ -743,33 +743,43 @@ The SQL query provides information about employees who were often late, left wor
 **Recommendations**
 
 **1.	Review Department Performance**
+
 Give special attention to the Pharmacy department, where there have been more cases of lateness and early checked outs. Work together with their superiors to identify any challenges they’re facing and come up with strategies to improve attendance.
 
 **2.	Workday Reminder**
+
 Since Mondays, Tuesday, and Thursdays have shown a pattern of lateness, review the rules about arriving on time. Integrate a gentle reminder to the system to help everyone remember to arrive on time.
 
 **3.	Monthly Meetings**
+
 Concentrate on months that have had discipline issues, like February, March, June, and November. Organize a short meeting with the employees at the start of these months to discuss the importance of being punctual and for not skipping work, offering tips and assistance.
 
 **4.	Individual Counseling**
+
 Connect with the employee who had the most lateness and early outs. Understand their situation and offer any help they may need. Use their story to encourage others. Similarly, organize a meeting with the most disciplined employees and learn from their positive habits.
 
 **5.	Departments and Forgiveness**
+
 Investigate department heads who are lenient regarding discipline. Make sure that they are familiar and understood how important the company policies are. Give them training or advice if required, and to ensure that rules are applied consistently in all teams.
 
 **6.	Time Management Awareness**
+
 Use the average time for lateness and early departures as a teaching moment. During the initial training, include techniques for better time management. This could help plan their day better and be on time.
 
 **7.	Policy Improvement**
+
 Look into the absence policy, considering whether it fits in various situations and if it is fair. Make changes if necessary to ensure a consistent and reasonable approach to manage absences.
 
 **8.	Punctuality Importance**
+
 Keep everyone informed about attendance rules with regular reminders. Use monthly newsletters or announcements to stress the importance of punctuality and following the rules.
 
 **9.	Giving Incentives**
+
 Consider introducing small rewards for departments and employees who are consistently meet punctuality goals. Recognize the most improved teams or individuals as an example for others to follow.
 
 **10.	Celebrate Success**
+
 Celebrating the accomplishments of punctual departments or individuals will create a positive atmosphere around punctuality. This can be shout-outs in the company communications or small appreciation events.
 
 
