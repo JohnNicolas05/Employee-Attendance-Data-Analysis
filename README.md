@@ -18,7 +18,7 @@ The HR department in a medical company provided a data that includes 10-15 param
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE IF NOT EXISTS raw_schedules (
 	type VARCHAR,
 	dates VARCHAR,
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS raw_schedules (
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE clean_schedules AS
 SELECT DISTINCT ON (type, user_id, dates, leave_type)
 	type,
@@ -60,7 +60,7 @@ ORDER BY type, dates;
 
 SQL Syntax:
 
-```sh
+```sql
 DELETE FROM clean_schedules
 WHERE type IN ('fake', 'free');
 ```
@@ -69,7 +69,7 @@ WHERE type IN ('fake', 'free');
 
 SQL Syntax:
 
-```sh
+```sql
 DELETE FROM clean_schedules
 WHERE leave_type = 'day_off';
 ```
@@ -80,7 +80,7 @@ WHERE leave_type = 'day_off';
 
 SQL Syntax:
 
-```sh
+```sql
 UPDATE clean_schedules
 SET time_start = '03:00:00'
 WHERE time_start IS NULL AND type = 'leave';
@@ -90,7 +90,7 @@ WHERE time_start IS NULL AND type = 'leave';
 
 SQL Syntax:
 
-```sh
+```sql
 UPDATE clean_schedules
 SET time_start = '03:00:00'
 WHERE time_end IS NULL AND type = 'leave';
@@ -102,7 +102,7 @@ WHERE time_end IS NULL AND type = 'leave';
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE attendance (
 	user_id VARCHAR,
 	first_name VARCHAR,
@@ -120,7 +120,7 @@ CREATE TABLE attendance (
 
 SQL syntax:
 
-```sh
+```sql
 ALTER TABLE attendance
 ADD COLUMN type VARCHAR;
 
@@ -134,7 +134,7 @@ SET type = 'work';
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE clean_attendance AS
 SELECT DISTINCT ON (user_id, date) * FROM attendance;
 ```
@@ -143,7 +143,7 @@ SELECT DISTINCT ON (user_id, date) * FROM attendance;
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE SchedulesIN AS
 SELECT 
 	cs.user_id, 
@@ -167,7 +167,7 @@ LEFT JOIN attendance ca
 
 SQL Syntax:
 
-```sh
+```sql
 DELETE FROM SchedulesIn
 WHERE type = 'work' AND attendance_case = 'OUT';
 ```
@@ -176,7 +176,7 @@ WHERE type = 'work' AND attendance_case = 'OUT';
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE schedules_in_out AS
 SELECT
 	si.user_id, 
@@ -198,7 +198,7 @@ LEFT JOIN clean_attendance ca
 
 SQL Syntax:
 
-```sh
+```sql
 DELETE FROM schedules_in_out
 WHERE type = 'work' AND case_attendance = 'IN';
 
@@ -215,7 +215,7 @@ SELECT DISTINCT ON (user_id, type, dates) * FROM schedules_in_out;
 
 SQL Syntax:
 
-```sh
+```sql
 UPDATE final_schedules
 SET time_in = '03:00:00'
 WHERE type = 'leave';
@@ -241,7 +241,7 @@ WHERE timezone IS NULL;
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE users(
 	user_id VARCHAR,
 	first_name VARCHAR,
@@ -262,7 +262,7 @@ CREATE TABLE users(
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE clean_users AS
 SELECT
 	user_id,
@@ -299,7 +299,7 @@ END
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE schedules_attendance_users AS
 SELECT 
 	fs.user_id,
@@ -336,7 +336,7 @@ SET time_out_diff_minutes = ROUND(EXTRACT(EPOCH FROM (time_end - time_out)) / 60
 
 SQL syntax:
 
-```sh
+```sql
 ALTER TABLE schedules_attendance_users
 ADD COLUMN time_in_status VARCHAR;
 
@@ -348,7 +348,7 @@ ADD COLUMN time_out_status VARCHAR;
 
 SQL Syntax:
 
-```sh
+```sql
 CREATE TABLE time_diff_schedules AS
 SELECT
 	user_id, 
@@ -374,7 +374,7 @@ AND (time_out_diff_minutes > -120 AND time_out_diff_minutes < 120);
 
 SQL Syntax:
 
-```sh
+```sql
 UPDATE time_diff_schedules
 SET time_in_status = (
 CASE
@@ -397,7 +397,7 @@ END
 
 SQL Syntax:
 
-```sh
+```sql
 ALTER TABLE time_diff_schedules
 ADD COLUMN dayoftheweek VARCHAR;
 
@@ -444,7 +444,7 @@ Using Card visual we used TotalWorkDays calculated measurement to visualize the 
 
 DAX Formula:
 
-```sh
+```dax
 TotalWorkDays = COUNT(SchedulesClean[dates])
 ```
 
@@ -456,7 +456,7 @@ Creating a Calculations table to store all the calculated measurement and creati
 
 DAX Formula:
 
-```sh
+```dax
 AttendanceRate = ([TotalWorkDays] - [TotalLeaveDays]) / [TotalWorkDays]
 TotalWorkDays = COUNT(SchedulesClean[dates])
 TotalLeaveDays = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "leave"))
@@ -470,7 +470,7 @@ Using a Card visual, we used the LateRate calculated measurement to get the late
 
 DAX Formula:
 
-```sh
+```dax
 LateRate = [TotalNumberOfLates] / [TotalWorkDays]
 TotalNumberOfLates = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"))
 TotalLeaveDays = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "leave"))
@@ -484,7 +484,7 @@ Using a Stacked Column Chart, we use the dayoftheweek column from SchedulesClean
 
 DAX Formula:
 
-```sh
+```dax
 TotalNumberOfLates = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"))
 TotalNumberOfEarlyOut = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "work" && SchedulesClean[time_out_status] = "Early Out"))
 ```
@@ -496,7 +496,7 @@ Using a Line Chart, we used the dates column from SchedulesClean as the X-axis t
 
 DAX Formula:
 
-```sh
+```dax
 TotalNumberOfLates = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"))
 TotalNumberOfEarlyOut = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "work" && SchedulesClean[time_out_status] = "Early Out"))
 TotalSickAndAnnualLeave = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[leave_type] = "sick" || SchedulesClean[leave_type] = "annual"))
@@ -510,7 +510,7 @@ Using a Card visual, we used the AverageLateInMinutes calculated measurement to 
 
 DAX Formula:
 
-```sh
+```dax
 AverageLateInMinutes = AVERAGEX(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"), ABS(SchedulesClean[time_in_diff_minutes]))
 ```
 **2.H. Getting the Average Early Out In Minutes.**
@@ -521,7 +521,7 @@ Using a Card visual, we used the AverageEarlyOutInMinutes calculated measurement
 
 DAX Formula:
 
-```sh
+```dax
 AverageEarlyOutInMinutes = AVERAGEX(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_out_status] = "Early Out"), ABS(SchedulesClean[time_out_diff_minutes]))
 ```
 
@@ -533,7 +533,7 @@ Using a Card visual, we used the TotalSickAndAnnualLeave calculated measurement 
 
 DAX Formula:
 
-```sh
+```dax
 TotalSickAndAnnualLeave = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[leave_type] = "sick" || SchedulesClean[leave_type] = "annual"))
 ```
 
@@ -545,7 +545,7 @@ Using a Clustered Column Chart, we use department column from SchedulesClean tab
 
 DAX Formula:
 
-```sh
+```dax
 UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
 ```
 
@@ -557,7 +557,7 @@ Using a Stacked Bar Chart, we used user_id from SchedulesClean table as the Y-ax
 
 DAX Formula:
 
-```sh
+```dax
 UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
 ```
 
@@ -567,7 +567,7 @@ UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalS
 
 DAX Formula:
 
-```sh
+```dax
 UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
 ```
 
@@ -579,7 +579,7 @@ UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalS
  
 SQL Syntax:
 
-```sh
+```sql
 SELECT
 	user_id,
 	position,
@@ -606,7 +606,7 @@ ORDER BY Disciplined ASC;
 
 SQL Syntax:
 
-```sh
+```sql
 SELECT
 	department,
 	Number_of_Lates,
@@ -632,7 +632,7 @@ LIMIT 1;
 
 SQL Syntax:
 
-```sh
+```sql
 SELECT
 	user_id,
 	position,
@@ -659,7 +659,7 @@ ORDER BY Disciplined DESC;
 
 SQL Syntax:
 
-```sh
+```sql
 SELECT
 	department,
 	Number_of_Lates,
@@ -698,7 +698,7 @@ The visualization illustrates that the **Pharmacy Department** has the highest c
 
 SQL Syntax:
 
-```sh
+```sql
 SELECT
 	user_id,
 	position,
