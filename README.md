@@ -53,7 +53,7 @@ SELECT DISTINCT ON (type, user_id, dates, leave_type)
 FROM raw_schedules
 CROSS JOIN LATERAL unnest(STRING_TO_ARRAY(dates, ',')) AS dates_split
 CROSS JOIN LATERAL unnest(STRING_TO_ARRAY(user_id, ',')) AS user_id_split
-ORDER BY type, user_id, dates;
+ORDER BY type, dates;
 ```
 
 **1.D. Removing rows with ‘fake’ and ‘free’ from clean_schedules.**
