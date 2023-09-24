@@ -5,7 +5,7 @@
 ## Employee Attendance Data Analysis
 **Problem**
 
-The HR department in a medical company provided a data that includes 10-15 parameters per year (arrival/departure time, vacations, sick days, time off, etc.) on 1000_ employees of the company. The HR department are asking to provide answers to the following questions, which the CEO formulated:
+The HR department in a medical company provided a data that includes 10-15 parameters per year (arrival/departure time, vacations, sick days, time off, etc.) on 1000+ employees of the company. The HR department are asking to provide answers to the following questions, which the CEO formulated:
 1.	Identify the most disciplined and undisciplined employees and divisions.
 2.	Create a visualization with the analysis of weekdays and months when the most employees were late/absent (either for vacation or sick leave)
 3.	Answer the following questions. Which heads of departments tend to forgive employees for lack of discipline? Are there any favorites for any heads of departments (perhaps some employees are always forgiven for being late, given time off, etc.)?
