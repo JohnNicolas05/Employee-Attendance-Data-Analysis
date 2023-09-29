@@ -40,7 +40,7 @@ SQL Syntax:
 
 ```sql
 CREATE TABLE clean_schedules AS
-SELECT DISTINCT ON (type, user_id, dates, leave_type)
+SELECT DISTINCT ON (type, user_id, dates)
 	type,
 	to_date(REPLACE(REPLACE(dates_split, '[', ''), ']', ''), 'YYYY-MM-DD') AS dates,
 	time_start,
@@ -92,7 +92,7 @@ SQL Syntax:
 
 ```sql
 UPDATE clean_schedules
-SET time_start = '03:00:00'
+SET time_end = '03:00:00'
 WHERE time_end IS NULL AND type = 'leave';
 ```
 
@@ -182,7 +182,8 @@ SELECT
 	si.user_id, 
 	si.type, 
 	si.dates, 
-	si.time_start, 
+	si.time_start,
+	si.time_in,
 	si.attendance_case, 
 	si.time_end, 
 	ca.time AS time_out,
@@ -235,6 +236,11 @@ WHERE type = 'leave';
 UPDATE final_schedules
 SET timezone = '+08:00'
 WHERE timezone IS NULL;
+
+UPDATE final_schedules
+SET leave_type = 'work'
+WHERE type = 'work' AND leave_type IS NULL;
+
 ```
 
 **1.P. Creating a table and importing ‘users.csv’**
@@ -295,7 +301,7 @@ END
 );
 ```
 
-**1.R. Creating a new table for schedules table, merging, and adding columns.**
+**1.R. Creating a new table for schedules table, merging, adding columns to calculate time_start and time_in difference and time_end and time_out.**
 
 SQL Syntax:
 
@@ -438,7 +444,7 @@ SET dayoftheweek = TO_CHAR(dates::DATE, 'Day');
 
 **2.B. Getting Total Working Days.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.b..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/c7fef8e6-daf8-4e8a-84ae-816b023a257a)
 
 Using Card visual we used TotalWorkDays calculated measurement to visualize the total number of working days.
 
@@ -450,7 +456,7 @@ TotalWorkDays = COUNT(SchedulesClean[dates])
 
 **2.C. Getting Attendance Rate.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.c..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/687c62e4-69a8-4caf-82f6-623f469d60bf)
 
 Creating a Calculations table to store all the calculated measurement and creating a new measure to calculate the attendance rate using DAX.
 
@@ -464,7 +470,7 @@ TotalLeaveDays = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "leave
 
 **2.D. Getting Late Rate**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.d..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/9a9a44a4-6f39-4db9-ae47-8af2c227c7ca)
 
 Using a Card visual, we used the LateRate calculated measurement to get the late rate.
 
@@ -473,10 +479,24 @@ DAX Formula:
 ```dax
 LateRate = [TotalNumberOfLates] / [TotalWorkDays]
 TotalNumberOfLates = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"))
-TotalLeaveDays = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "leave"))
+TotalWorkDays = COUNT(SchedulesClean[dates])
 ```
 
-**2.E. Getting Total Number of Lates and Early Outs per Day of the Week.**
+**2.E. Early Out Rate**
+
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/a9584433-35d5-46ae-9b4b-0d574bce83da)
+
+Using a Card visual, we used the LateRate calculated measurement to get the early out rate.
+
+DAX Formula:
+
+```dax
+EarlyOutRate = [TotalNumberOfEarlyOut] / [TotalWorkDays]
+TotalNumberOfEarlyOut = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "work" && SchedulesClean[time_out_status] = "Early Out"))
+TotalWorkDays = COUNT(SchedulesClean[dates])
+```
+
+**2.F. Getting Total Number of Lates and Early Outs per Day of the Week.**
 
 ![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.e..png)
 
@@ -488,9 +508,9 @@ DAX Formula:
 TotalNumberOfLates = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"))
 TotalNumberOfEarlyOut = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] = "work" && SchedulesClean[time_out_status] = "Early Out"))
 ```
-**2.F. Getting Late, Early Out and Leave Monthly Trend.**
+**2.G. Getting Late, Early Out and Leave Monthly Trend.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.f..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/1cc4788a-6748-4ed8-b120-07aca65645af)
 
 Using a Line Chart, we used the dates column from SchedulesClean as the X-axis then used TotalNumberOfEarlyOut, TotalNumberOfLates, and TotalSickAndAnnualLeave calculated measurements as the Y-axis.
 
@@ -502,9 +522,9 @@ TotalNumberOfEarlyOut = COUNTROWS(FILTER(SchedulesClean,'SchedulesClean'[type] =
 TotalSickAndAnnualLeave = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[leave_type] = "sick" || SchedulesClean[leave_type] = "annual"))
 ```
 
-**2.G. Getting the Average Late In Minutes.**
+**2.H. Getting the Average Late In Minutes.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.g..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/e406eff8-6ea3-4522-b536-7114ad20ad00)
 
 Using a Card visual, we used the AverageLateInMinutes calculated measurement to get the average late in minutes.
 
@@ -513,9 +533,9 @@ DAX Formula:
 ```dax
 AverageLateInMinutes = AVERAGEX(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_in_status] = "Late"), ABS(SchedulesClean[time_in_diff_minutes]))
 ```
-**2.H. Getting the Average Early Out In Minutes.**
+**2.I. Getting the Average Early Out In Minutes.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.h..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/ec68979a-7184-4718-9032-405977873e55)
 
 Using a Card visual, we used the AverageEarlyOutInMinutes calculated measurement to get the average early out in minutes.
 
@@ -525,9 +545,9 @@ DAX Formula:
 AverageEarlyOutInMinutes = AVERAGEX(FILTER(SchedulesClean, SchedulesClean[type] = "work" && SchedulesClean[time_out_status] = "Early Out"), ABS(SchedulesClean[time_out_diff_minutes]))
 ```
 
-**2.I. Getting the Number of Sick and Annual Leave.**
+**2.J. Getting the Number of Sick and Annual Leave.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.i..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/60bb270b-4556-4f95-a728-931f0e44c745)
 
 Using a Card visual, we used the TotalSickAndAnnualLeave calculated measurement to get the total number of sick and annual leave.
 
@@ -537,9 +557,9 @@ DAX Formula:
 TotalSickAndAnnualLeave = COUNTROWS(FILTER(SchedulesClean, SchedulesClean[leave_type] = "sick" || SchedulesClean[leave_type] = "annual"))
 ```
 
-**2.J. Getting the Most Undisciplined Department.**
+**2.K. Getting the Most Undisciplined Department.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.j..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/c8eadb11-8f34-496b-8c93-32a9e4fc8dc6)
 
 Using a Clustered Column Chart, we use department column from SchedulesClean table as the X-axis and used UndisciplinedEmployee calculated measurement as the Y-axis.
 
@@ -549,9 +569,9 @@ DAX Formula:
 UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
 ```
 
-**2.K. Getting the Most Disciplined Employee.**
+**2.L. Getting the Most Disciplined Employee.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.k..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/ffb7947d-9caf-44dd-a98e-b730cdba9b4f)
 
 Using a Stacked Bar Chart, we used user_id from SchedulesClean table as the Y-axis and used UndisciplinedEmployee calculated measures as the X-axis and sorted the X-axis in ascending order.
 
@@ -561,9 +581,9 @@ DAX Formula:
 UndisciplinedEmployee = [TotalNumberOfLates] + [TotalNumberOfEarlyOut] + [TotalSickAndAnnualLeave]
 ```
 
-**2.L. Getting the Most Undisciplined Employee.**
+**2.M. Getting the Most Undisciplined Employee.**
 
-![Alt text](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/blob/main/Employee-Attendance-Data-Analysis/assets/2.l..png)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/3a15a03c-9647-4ac5-b4ff-bacfd5368b31)
 
 DAX Formula:
 
@@ -600,7 +620,7 @@ FROM (
 ORDER BY Disciplined ASC;
 ```
 
-![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/7d60a323-c40e-4142-a627-b148c67ecef7)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/3d4e57b2-ac13-45be-b1fb-dff136ad71f7)
 
 **b. Most disciplined division.**
 
@@ -626,7 +646,8 @@ ORDER BY Disciplined ASC
 LIMIT 1;
 ```
 
-![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/2eb8f95d-6a72-45f2-af25-57d80ec741ca)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/3278a1be-b785-453a-9f29-dce61c449be2)
+
 
 **c. Most undisciplined employees.**
 
@@ -653,7 +674,7 @@ FROM (
 ORDER BY Disciplined DESC;
 ```
 
-![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/2d12cbab-697d-4818-87e0-9c845a390a25)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/deb9f11c-9476-452b-b46e-e01620d89b71)
 
 **d. Most undisciplined division.**
 
@@ -679,20 +700,21 @@ ORDER BY Disciplined DESC
 LIMIT 1;
 ```
 
-![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/c4470b8f-a5b3-4334-bdf8-affc543c0c18)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/68ea2eda-639f-4569-a174-6d2b8f55f1e7)
 
 **3.B. Create a visualization with the analysis of weekdays and months when the most employees were late/absent (either for vacation or sick leave).**
 
-![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/caffa9ec-c8aa-4f7e-8e88-529f59db442e)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/c2250cab-ba0b-499c-945c-53a84483d5f8)
 
-This visualization was made with Power BI. It highlights that the most instances of employees being late happened on **Thursdays**, totaling **62** occurrences. Additionally, the highest number of sick and vacation leaves occurred in **June 2022**, totaling **12** instances.
+This visualization was made with Power BI. It highlights that the most instances of employees being late happened on **Thursdays**, totaling **64** occurrences. Additionally, the highest number of sick and vacation leaves occurred in **June 2022**, totaling **12** instances.
 
 **3.C. Answering the following questions.**
+
 &nbsp; **a. Which heads of departments tend to forgive employees for lack of discipline?**
 
-![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/1e187176-2eb7-4a92-8ebd-de690fca3cd8)
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/20ed0c4d-0209-40a7-b08e-8ac59ca1ffc5)
 
-The visualization illustrates that the **Pharmacy Department** has the highest count of occurrences for being late, leaving work early, taking sick leave, and being granted time off, totaling **223** actions.
+The visualization illustrates that the **Pharmacy Department** has the highest count of occurrences for being late, leaving work early, taking sick leave, and being granted time off, totaling **224** occurences.
 
 &nbsp; **b. Are there any favorites for any heads of departments (perhaps some employees are always forgiven for being late, given time off, etc.)**
 
@@ -718,27 +740,28 @@ FROM (
 ) AS Subquery
 ORDER BY Undisciplined DESC;
 ```
-![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/72d29494-b29d-425a-b63f-86031166bf7c)
 
-The SQL query provides information about employees who were often late, left work early, or took time off.  Employee with **ID 74054** from the **Pharmacy Department** was the most undisciplined employee with **33 lates**, **21 early outs**, and **1 absences**. Employee with **ID 74639** from the **Pharmacy Department** was late the most, totaling **43** times. Employee with **ID 74454** from the **Pharmacy Department** left work early the most, totaling **26** times. From the **Medical Department**, employee with **ID 74049** took the most sick and vacation leave, a total of **18** times.
+![image](https://github.com/JohnNicolas05/Employee-Attendance-Data-Analysis/assets/34438775/a26b47c9-e656-4658-8552-dbf515b94d40)
+
+The SQL query provides information about employees who were often late, left work early, or took time off.  Employee with **ID 74054** from the **Pharmacy Department** was the most undisciplined employee with **35 lates**, **21 early outs**, and **1 absences**. Employee with **ID 74639** from the **Pharmacy Department** was late the most, totaling **43** times. Employee with **ID 74454** from the **Pharmacy Department** left work early the most, totaling **26** times. From the **Medical Department**, employee with **ID 74049** took the most sick and vacation leave, a total of **17** times.
 
 **Insights**
-1.	Upon cleaning the data set with matching attendance and schedules we found out that there are total of **5066** working days.
-2.	Using a calculated measurement, we found out that employee attendance rate is **97.75%**
-3.	Using a calculated measurement, we found out that employee late rate is **6.22%**
-4.	Using a calculated measurement, we found out that employee early out rate is **3.14%**
-5.	Number of employees who checked in late and checked out early are almost spread evenly throughout the week wherein: **Thursday** with the most late with **62** late and **18** early outs, followed by **Tuesday** with the most number of early outs with **28** early outs and **52** late, and **Monday** with **50** lates and **25** early outs.
-6.	The month with most disciplined employees is **November 2022** with **7** lates, **6** early outs, **8** absences.
-7.	The month with the most absences is **June 2022** with a total of **12** absences.
-8.	The month with the most lates are **February** and **March of 2022** with a total of **33** lates in both months.
-9.	The month with the most employees who checked out early is **December 2021** with a total early outs of **25**.
-10.	Average late in minutes is **40 minutes**.
-11.	Average early out in minutes is **34.81 minutes**.
-12.	The total absences occurred throughout the period is **54**.
-13.	The department who has the most undisciplined employees is **Pharmacy** with a total of **223** occurrences.
-14.	The department who has the most disciplined employees is **“No Data”** with a total of **9** occurrences.
-15.	The most undisciplined employee is **user_id 74054** with a total of **54** occurrences.
-16.	The most disciplined employee are user ids; **93607**, **84932**, **84490**, **83894**, **83893**, **75848**, and **120696** with a total of **1** occurrence.
+1.	Upon cleaning the data set with matching attendance and schedules we found out that there are total of **5060** working days.
+2.	Using a calculated measurement, we found out that employee attendance rate is **97.71%**
+3.	Using a calculated measurement, we found out that employee late rate is **6.28%**
+4.	Using a calculated measurement, we found out that employee early out rate is **3.16%**
+5.	Number of employees who checked in late and checked out early are almost spread evenly throughout the week wherein: **Thursday** with the most late with **64** late and **18** early outs, followed by **Tuesday** with the most number of early outs with **29** early outs and **53** late, and **Monday** with **50** lates and **25** early outs.
+6.	The month with most disciplined employees was **August 2022** with **8** lates, **6** early outs, **8** absences.
+7.	The month with the most absences was **June 2022** with a total of **12** absences.
+8.	The month with the most lates was **March of 2022** with a total of **34** lates.
+9.	The month with the most employees who checked out early is **December 2021** with a total early outs of **26**.
+10.	Average late in minutes is **39 minutes**.
+11.	Average early out in minutes is **33.37 minutes**.
+12.	The total absences occurred throughout the period is **52**.
+13.	The department who has the most undisciplined employees is **Pharmacy** with a total of **224** occurrences.
+14.	The department who has the most disciplined employees is **“No Data”** with a total of **7** occurrences.
+15.	The most undisciplined employee is **user_id 74054** with a total of **57** occurrences.
+16.	The most disciplined employee are user ids; **93607**, **84932**, **84490**, **83894**, **83893**, and **75848** with a total of **1** occurrence.
 
 **Recommendations**
 
